@@ -14,25 +14,38 @@ def is_int(value):
         return False
 
 #gets single book, new route
-@books_bp.route("/<book_id>", methods=["GET"])
+@books_bp.route("/<book_id>", methods=["GET", "PUT", "DELETE"])
 def get_single_book(book_id):
+    book = Book.query.get(book_id)
     if not is_int(book_id):
         return {
             "message": f"ID {book_id} must be a number",
             "success": False
         }, 400
 
-    book = Book.query.get(book_id)
-    if book:
+    
+    if request.method == "GET":
         return {
             "id" : book.id,
             "title" : book.title,
             "description": book.description
         }, 200
-    return {
-        "message": f"Book with id {book_id} was not found",
-        "success": False,
-    }, 404
+    # return {
+    #     "message": f"Book with id {book_id} was not found",
+    #     "success": False,
+    # }  
+    elif request.method == "PUT":
+        form_data = request.get_json()
+        book.title = form_data["title"]
+        book.description = form_data["description"]
+
+        db.session.commit()
+        return (f"Book #{book.id} successfully updated")
+
+    elif request.method == "DELETE":
+        db.session.delete(book)
+        db.session.commit()
+        return (f"Book #{book.id} successfully deleted")
 
 @books_bp.route("", methods=["GET"], strict_slashes=False)
 def books_index():

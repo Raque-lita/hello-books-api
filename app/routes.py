@@ -1,10 +1,51 @@
 from app import db
 from flask import Blueprint
 from flask import request
+from flask import jsonify
 from .models.book import Book
 
 
 books_bp = Blueprint("books", __name__, url_prefix="/books")
+
+def is_int(value):
+    try:
+        return int(value)
+    except ValueError:
+        return False
+
+#gets single book, new route
+@books_bp.route("/<book_id>", methods=["GET"])
+def get_single_book(book_id):
+    if not is_int(book_id):
+        return {
+            "message": f"ID {book_id} must be a number",
+            "success": False
+        }, 400
+
+    book = Book.query.get(book_id)
+    if book:
+        return {
+            "id" : book.id,
+            "title" : book.title,
+            "description": book.description
+        }, 200
+    return {
+        "message": f"Book with id {book_id} was not found",
+        "success": False,
+    }, 404
+
+@books_bp.route("", methods=["GET"], strict_slashes=False)
+def books_index():
+    books = Book.query.all()
+    books_response = []
+    for book in books:
+        books_response.append({
+            "id": book.id,
+            "title": book.title,
+            "description": book.description
+            })
+    return jsonify(books_response, 200)
+
 
 
 @books_bp.route("", methods=["POST"])

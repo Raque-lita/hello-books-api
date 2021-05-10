@@ -1,7 +1,7 @@
 from app import db
 from flask import Blueprint
 from flask import request
-from flask import jsonify
+from flask import jsonify, make_response
 from .models.book import Book
 
 
@@ -17,14 +17,16 @@ def is_int(value):
 @books_bp.route("/<book_id>", methods=["GET", "PUT", "DELETE"])
 def get_single_book(book_id):
     book = Book.query.get(book_id)
+
     if not is_int(book_id):
         return {
             "message": f"ID {book_id} must be a number",
             "success": False
         }, 400
-
     
     if request.method == "GET":
+        if book is None:
+            return make_response("none", 404)
         return {
             "id" : book.id,
             "title" : book.title,
@@ -49,15 +51,25 @@ def get_single_book(book_id):
 
 @books_bp.route("", methods=["GET"], strict_slashes=False)
 def books_index():
-    books = Book.query.all()
-    books_response = []
-    for book in books:
-        books_response.append({
-            "id": book.id,
-            "title": book.title,
-            "description": book.description
+    
+
+    if request.method == "GET":
+        title_query = request.args.get("title", 'asc')
+        if title_query:
+            books = Book.query.filter_by(title=title_query)
+        else:
+            books = Book.query.all()                   
+    
+        books_response = []
+
+
+        for book in books:
+            books_response.append({
+                "id": book.id,
+                "title": book.title,
+                "description": book.description
             })
-    return jsonify(books_response, 200)
+        return jsonify(books_response), 200
 
 
 
